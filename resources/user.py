@@ -18,7 +18,7 @@ blp = Blueprint("Users", __name__, description="Operations on users")
 
 #Send emails MAILGUN
 def send_simple_message(to, subject, body):
-    #load_dotenv()
+    load_dotenv()
     domain = os.getenv("MAILGUN_DOMAIN")
 	
     return requests.post(
