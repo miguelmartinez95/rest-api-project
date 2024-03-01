@@ -13,6 +13,7 @@ import models
 import os 
 import secrets
 
+
 from blocklist import BLOCKLIST
 
 def create_app(db_url=None):
