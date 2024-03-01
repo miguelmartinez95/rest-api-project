@@ -44,14 +44,16 @@ class UserRegister(MethodView):
         try:
             db.session.add(user)
             db.session.commit()
-        except IntegrityError:
-            abort(409, message="Problem creating the user. Is already defined?")
 
-        send_simple_message(
+            send_simple_message(
             to=user.email,
             subject="Successfully signed up",
             body=f"Hi {user.username}! You have signed up to the Stores REST API"
         )
+
+        except IntegrityError:
+            abort(409, message="Problem creating the user. Is already defined?")
+
 
         return {"message": "User created successfully"},201
     
