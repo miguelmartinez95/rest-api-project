@@ -1,27 +1,43 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-from schemas import UserSchema
+from schemas import UserSchema, UserRegisterSchema
 from passlib.hash import pbkdf2_sha256
 from sqlalchemy.exc import IntegrityError
 
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required, get_jwt
 
-
+import os
+import requests
 from db import db
 from blocklist import BLOCKLIST
 from models import UserModel
 
+from dotenv import load_dotenv
 
 blp = Blueprint("Users", __name__, description="Operations on users")
+
+#Send emails MAILGUN
+def send_simple_message(to, subject, body):
+    #load_dotenv()
+    domain = os.getenv("MAILGUN_DOMAIN")
+	
+    return requests.post(
+		f"https://api.mailgun.net/v3/{domain}/messages",
+		auth=("api", os.getenv("MAILGUN_API_KEY")),
+		data={"from": "Mike <mailgun@{domain}>",
+			"to": [to],
+			"subject": subject,
+			"text": body})
 
 
 @blp.route("/register")
 class UserRegister(MethodView):
-    @blp.arguments(UserSchema)
+    @blp.arguments(UserRegisterSchema)
     def post(self, user_data):
 
         user = UserModel(
             username = user_data["username"],
+            email = user_data["email"],
             password = pbkdf2_sha256.hash(user_data["password"])
         )
 
@@ -30,6 +46,12 @@ class UserRegister(MethodView):
             db.session.commit()
         except IntegrityError:
             abort(409, message="Problem creating the user. Is already defined?")
+
+        send_simple_message(
+            to=user.email,
+            subject="Successfully signed up",
+            body=f"Hi {user.username}! You have signed up to the Stores REST API"
+        )
 
         return {"message": "User created successfully"},201
     
