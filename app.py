@@ -13,12 +13,21 @@ import models
 import os 
 import secrets
 
+from redis import Redis
+from rq import Queue
 
+from dotenv import load_dotenv
 from blocklist import BLOCKLIST
 
 def create_app(db_url=None):
     app = Flask("app")
+    load_dotenv()
 
+    connection = Redis.from_url(
+        os.getenv("REDIS_URL")
+    )
+
+    app.queue = Queue("emails", connection=connection)
     app.config["PROPAGATE_EXCEPTIONS"] = True
     app.config["API_TITLE"] = "Stores REST API"
     app.config["API_VERSION"] = "v1"

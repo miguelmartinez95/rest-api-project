@@ -9,3 +9,6 @@ flask-migrate
 gunicorn
 psycopg2
 requests
+rq
+rq-dashboard
+redis

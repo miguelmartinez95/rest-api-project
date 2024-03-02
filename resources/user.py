@@ -5,29 +5,17 @@ from passlib.hash import pbkdf2_sha256
 from sqlalchemy.exc import IntegrityError
 
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required, get_jwt
+from flask import current_app
 
 import os
 import requests
 from db import db
 from blocklist import BLOCKLIST
 from models import UserModel
-
+from tasks import send_user_registration_email
 from dotenv import load_dotenv
 
 blp = Blueprint("Users", __name__, description="Operations on users")
-
-#Send emails MAILGUN
-def send_simple_message(to, subject, body):
-    load_dotenv()
-    domain = os.getenv("MAILGUN_DOMAIN")
-	
-    return requests.post(
-		f"https://api.mailgun.net/v3/{domain}/messages",
-		auth=("api", os.getenv("MAILGUN_API_KEY")),
-		data={"from": f"Mike <mailgun@{domain}>",
-			"to": [to],
-			"subject": subject,
-			"text": body})
 
 
 @blp.route("/register")
@@ -45,11 +33,7 @@ class UserRegister(MethodView):
             db.session.add(user)
             db.session.commit()
 
-            send_simple_message(
-            to=user.email,
-            subject="Successfully signed up",
-            body=f"Hi {user.username}! You have signed up to the Stores REST API"
-        )
+            current_app.queue.enqueue(send_user_registration_email, user.email, user.username)
 
         except IntegrityError:
             abort(409, message="Problem creating the user. Is already defined?")
